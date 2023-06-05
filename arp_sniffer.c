@@ -104,6 +104,8 @@ int sniff_packet(char *user_dev_name){
     if(packet_descriptor == NULL){
         printf("%s\n",error);
         return -1;
+    }else{
+        printf("Listening on %s...\n", device_name);
     }
     while(1){
         packet = pcap_next(packet_descriptor, &header);
