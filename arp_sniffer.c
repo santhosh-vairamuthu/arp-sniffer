@@ -65,27 +65,19 @@ void print_help(char *bin){
     exit(1);
 }
 
-void print_mac_address(uint8_t mac[6]){
-    for(int i=0;i<6;i++){
-        printf("%02x", mac[i]);
-        if(i!=5){
-            printf(":");
-        }
-    }
-    printf("\n");
-
+char* get_hardware_address(uint8_t mac[6]){
+	char *m = (char*)malloc(20*sizeof(char));
+	sprintf(m, "%02X:%02X:%02X:%02X:%02X:%02X", mac[0], mac[1], mac[2], mac[3], mac[4], mac[5]);
+	return m;
 }
 
-void print_ip_address(uint8_t ip[4]){
-    for(int i=0;i<4 ;i++){
-        printf("%d", ip[i]);
-        if(i!=3){
-            printf(".");
-        }
-    }
-    printf("\n");
 
+char* get_ip_address(uint8_t ip[4]){
+	char *m = (char*)malloc(20*sizeof(char));
+	sprintf(m, "%d.%d.%d.%d", ip[0], ip[1], ip[2], ip[3]);
+	return m;
 }
+
 
 int sniff_packet(char *user_dev_name){
     char *device_name, *net_addr, *net_mask;
@@ -105,7 +97,7 @@ int sniff_packet(char *user_dev_name){
         printf("%s\n",error);
         return -1;
     }else{
-        printf("Listening on %s...\n", device_name);
+        printf("Listening on %s...\n", user_dev_name);
     }
     while(1){
         packet = pcap_next(packet_descriptor, &header);
@@ -121,14 +113,15 @@ int sniff_packet(char *user_dev_name){
                 printf("Received at %s\n", ctime((const time_t*) &header.ts.tv_sec));
                 printf("Ethernet address constant length is %d\n", ETHER_HDR_LEN);
                 printf("Operation Type: %s\n", (ntohs(arp_header->opcode) == ARP_REQUEST ) ? "ARP-REQUEST" : "ARP_RESPONSE" );
-                printf("Sender MAC: ");
-                print_mac_address(arp_header->sender_mac);
-                printf("Sender IP: ");
-                print_ip_address(arp_header->sender_ip);
-                printf("Target MAC: ");
-                print_mac_address(arp_header->target_mac);
-                printf("Target IP: ");
-                print_ip_address( arp_header->target_ip);
+                sender_mac = get_hardware_address(arp_header->sender_mac);
+				sender_ip = get_ip_address(arp_header->sender_ip);
+				target_mac = get_hardware_address(arp_header->target_mac);
+				target_ip = get_ip_address(arp_header->target_ip);
+				printf("Sender MAC: %s\n", sender_mac);
+				printf("Sender IP: %s\n", sender_ip);
+				printf("Target MAC: %s\n", target_mac);
+				printf("Target IP: %s\n", target_ip);
+
                 printf("------------------------------------------------------------\n");
 
 
