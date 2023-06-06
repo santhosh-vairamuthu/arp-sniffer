@@ -9,6 +9,7 @@
 #include<arpa/inet.h>
 #include<netinet/if_ether.h>
 #include<net/ethernet.h>
+#include<unistd.h>
 
 
 #define ARP_REQUEST 1
@@ -44,11 +45,11 @@ int print_available_interface(){
 
 
 void print_version(){
-    printf("    ___    ____  ____     _____ _   ____________________________     _    ______   ___\n");
-    printf("   /   |  / __ \\/ __ \\   / ___// | / /  _/ ____/ ____/ ____/ __ \\   | |  / / __ \\ <  /\n");
-    printf("  / /| | / /_/ / /_/ /   \\__ \\/  |/ // // /_  / /_  / __/ / /_/ /   | | / / / / / / / \n");
-    printf(" / ___ |/ _, _/ ____/   ___/ / /|  // // __/ / __/ / /___/ _, _/    | |/ / /_/ / / /  \n");
-    printf("/_/  |_/_/ |_/_/       /____/_/ |_/___/_/   /_/   /_____/_/ |_|     |___/\\____(_)_/   \n");
+    printf("    ___    ____  ____     _____ _   ____________________________    \n");
+    printf("   /   |  / __ \\/ __ \\   / ___// | / /  _/ ____/ ____/ ____/ __ \\\n");
+    printf("  / /| | / /_/ / /_/ /   \\__ \\/  |/ // // /_  / /_  / __/ / /_/ / \n");
+    printf(" / ___ |/ _, _/ ____/   ___/ / /|  // // __/ / __/ / /___/ _, _/    \n");
+    printf("/_/  |_/_/ |_/_/       /____/_/ |_/___/_/   /_/   /_____/_/ |_|     \n");
     printf("\nARP Spoof Detector v0.1\n\n");
 }
 
@@ -78,8 +79,14 @@ char* get_ip_address(uint8_t ip[4]){
 	return m;
 }
 
+void alert_spoof(char *ip, char *mac){
+	printf("\nAlert: Possible ARP Spoofing Detected. IP: %s and MAC: %s\n", ip, mac);
+} 
+
+
 
 int sniff_packet(char *user_dev_name){
+
     char *device_name, *net_addr, *net_mask;
     int return_code,i;
     char error[PCAP_ERRBUF_SIZE];
@@ -91,24 +98,42 @@ int sniff_packet(char *user_dev_name){
     arp_hdr *arp_header = NULL;
     __u_char *hard_ptr;
 	device_name  = user_dev_name;
+    char *sender_mac, *sender_ip, *target_mac, *target_ip;
+    time_t ct, lt;
 
 	packet_descriptor = pcap_open_live(device_name, BUFSIZ, 0,1, error);
+
     if(packet_descriptor == NULL){
         printf("%s\n",error);
         return -1;
     }else{
         printf("Listening on %s...\n", user_dev_name);
     }
+
     while(1){
+
         packet = pcap_next(packet_descriptor, &header);
+
         if(packet == NULL){
             printf("ERROR IN PACKET CAPTURING\n");
             return -1;
         }else{
+        
             ether_ptr = (struct ether_header *)packet;
+
             if(ntohs(ether_ptr->ether_type) == ETHERTYPE_ARP){
+
+                ct = time(NULL);
+				diff = ct - lt;
+				printf("ct: %ld; Diff: %ld; Counter: %d\n",ct, diff, counter);
+				if(diff > 20){
+					counter = 0;
+				}
+
                 arp_header = (struct _arp_hdr *)(packet+14); 
+
                 printf("\n------------------------------------------------------------\n");
+
                 printf("Received an ARP packet with length  %d\n", header.len);
                 printf("Received at %s\n", ctime((const time_t*) &header.ts.tv_sec));
                 printf("Ethernet address constant length is %d\n", ETHER_HDR_LEN);
@@ -124,23 +149,12 @@ int sniff_packet(char *user_dev_name){
 
                 printf("------------------------------------------------------------\n");
 
+                counter++;
+				lt = time(NULL);
+				if(counter > 10){
+					alert_spoof(sender_ip, sender_mac);
+				}
 
-                // i = ETHER_ADDR_LEN; 
-                // hard_ptr = ether_ptr->ether_dhost;
-                // printf("DESTINATION ADDRESS: ");
-                // do{
-                //     printf("%s%x", (i == ETHER_ADDR_LEN) ? " " : ":", *hard_ptr++);
-                // }while(--i>0);
-                // printf("\n");
-
-                // i = ETHER_ADDR_LEN;
-                // hard_ptr = ether_ptr->ether_shost;
-                // printf("SOURCE ADDRESS: ");
-                // do{
-                //     printf("%s%x", (i == ETHER_ADDR_LEN) ? " " : ":", *hard_ptr++);
-                // }while(--i>0);
-                // printf("\n");
-                // printf("------------------------------------------------------------\n");
                 
             }
         }
@@ -149,6 +163,13 @@ int sniff_packet(char *user_dev_name){
 }
 
 int main(int argc, char *argv[]){
+
+    if(access("/usr/bin/notify-send", F_OK) == -1){
+		printf("\n\nMissing dependencies: libnotify-bin\n");
+		printf("Please run: sudo apt-get install libnotify-bin\n\n");
+		print_version();
+		exit(-1);
+	}
 
     if(argc < 2 || strcmp("-h", argv[1]) == 0 || strcmp("--help", argv[1]) == 0 ){
         print_version();
