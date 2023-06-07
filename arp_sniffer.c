@@ -100,6 +100,7 @@ int sniff_packet(char *user_dev_name){
 	device_name  = user_dev_name;
     char *sender_mac, *sender_ip, *target_mac, *target_ip;
     time_t ct, lt;
+    long int diff=0;
 
 	packet_descriptor = pcap_open_live(device_name, BUFSIZ, 0,1, error);
 
