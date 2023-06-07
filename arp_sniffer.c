@@ -45,11 +45,11 @@ int print_available_interface(){
 
 
 void print_version(){
-    printf("    ___    ____  ____     _____ _   ____________________________    \n");
-    printf("   /   |  / __ \\/ __ \\   / ___// | / /  _/ ____/ ____/ ____/ __ \\\n");
-    printf("  / /| | / /_/ / /_/ /   \\__ \\/  |/ // // /_  / /_  / __/ / /_/ / \n");
-    printf(" / ___ |/ _, _/ ____/   ___/ / /|  // // __/ / __/ / /___/ _, _/    \n");
-    printf("/_/  |_/_/ |_/_/       /____/_/ |_/___/_/   /_/   /_____/_/ |_|     \n");
+
+    printf("   ___   ___  ___    _____  _____________________  \n");
+    printf("  / _ | / _ \\/ _ \\  / __/ |/ /  _/ __/ __/ __/ _ \\ \n");
+    printf(" / __ |/ , _/ ___/ _\\ \\/    // // _// _// _// , _/ \n");
+    printf("/_/ |_/_/|_/_/    /___/_/|_/___/_/ /_/ /___/_/|_|  \n");
     printf("\nARP Spoof Detector v0.1\n\n");
 }
 
@@ -100,7 +100,7 @@ int sniff_packet(char *user_dev_name){
 	device_name  = user_dev_name;
     char *sender_mac, *sender_ip, *target_mac, *target_ip;
     time_t ct, lt;
-    long int diff=0;
+    long int diff = 0, counter = 0;
 
 	packet_descriptor = pcap_open_live(device_name, BUFSIZ, 0,1, error);
 
@@ -126,14 +126,14 @@ int sniff_packet(char *user_dev_name){
 
                 ct = time(NULL);
 				diff = ct - lt;
-				printf("ct: %ld; Diff: %ld; Counter: %d\n",ct, diff, counter);
-				if(diff > 20){
+				printf("\nCurrent Time: %ld; Difference Time: %ld; Counter: %ld\n",ct, diff, counter);
+				if(diff > 15){
 					counter = 0;
 				}
 
                 arp_header = (struct _arp_hdr *)(packet+14); 
 
-                printf("\n------------------------------------------------------------\n");
+                printf("\n-------------------------------------------------------\n");
 
                 printf("Received an ARP packet with length  %d\n", header.len);
                 printf("Received at %s\n", ctime((const time_t*) &header.ts.tv_sec));
@@ -148,7 +148,7 @@ int sniff_packet(char *user_dev_name){
 				printf("Target MAC: %s\n", target_mac);
 				printf("Target IP: %s\n", target_ip);
 
-                printf("------------------------------------------------------------\n");
+                printf("-------------------------------------------------------\n");
 
                 counter++;
 				lt = time(NULL);
