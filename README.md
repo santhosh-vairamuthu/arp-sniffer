@@ -33,5 +33,5 @@ $ sudo apt-get install libpcap-dev
 2. You can compile with the following command
 
 ```
-$ gcc arpsniffer.c -o arpsniffer -lpcap
+$ gcc arp_sniffer.c -o arpsniffer -lpcap
 ```
